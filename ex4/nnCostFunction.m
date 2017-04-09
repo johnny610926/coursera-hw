@@ -62,33 +62,38 @@ Theta2_grad = zeros(size(Theta2));
 %               and Theta2_grad from Part 2.
 %
 
-for i = 1:m
-  a1 = [1 X(i,:)]'; % add bias unit
-  z2 = Theta1*a1;
+delta1_accumulate = zeros(hidden_layer_size, input_layer_size + 1);
+delta2_accumulate = zeros(num_labels, hidden_layer_size + 1);
+
+for t = 1:m
+  a1 = [1, X(t,:)]'; % add bias unit
+  z2 = Theta1 * a1;
   a2 = [1; sigmoid(z2)]; % add bias unit
-  z3 = Theta2*a2;
+  z3 = Theta2 * a2;
   a3 = sigmoid(z3);
-  y_out = zeros(num_labels, 1);
-  y_out(y(i)) = 1;
-  J = J + ((y_out'*log(a3)) + ((1-y_out)'*log(1-a3)));
+
+  y_vec = zeros(num_labels, 1);
+  y_vec(y(t)) = 1;
+  J = J + ((y_vec' * log(a3)) + ((1 - y_vec)' * log(1 - a3)));
+
+  delta3 = a3 - y_vec;
+  delta2 = Theta2' * delta3 .* [1; sigmoidGradient(z2)];
+  
+  delta2_accumulate = delta2_accumulate + delta3 * a2';
+  delta1_accumulate = delta1_accumulate + delta2(2:end, :) * a1';
 endfor
 
 theta1 = Theta1(:, 2:end)(:); % ignore theta_zero (for bias unit)
 theta2 = Theta2(:, 2:end)(:); % ignore theta_zero (for bias unit)
-J = ((-1/m)*J) + ((lambda/(2*m))*(theta1'*theta1 + theta2'*theta2));
+J = ((-1/m) * J) + ((lambda/(2*m)) * (theta1'*theta1 + theta2'*theta2));
 
+%Theta1_grad = (1 / m) * delta1_accumulate;
+%Theta2_grad = (1 / m) * delta2_accumulate;
+%Theta1_grad(:, 2:end) = Theta1_grad(:, 2:end) .+ (lambda / m) * Theta1(:, 2:end);
+%Theta2_grad(:, 2:end) = Theta2_grad(:, 2:end) .+ (lambda / m) * Theta2(:, 2:end);
 
-
-
-
-
-
-
-
-
-
-
-
+Theta1_grad = (1 / m) * (delta1_accumulate + (lambda * [zeros(hidden_layer_size, 1) Theta1(:, 2:end)]));
+Theta2_grad = (1 / m) * (delta2_accumulate + (lambda * [zeros(num_labels, 1) Theta2(:, 2:end)]));
 
 % -------------------------------------------------------------
 
